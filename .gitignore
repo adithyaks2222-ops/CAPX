@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.pytest_cache/
+
+# CAPX Runtime
+logs/
+reports/
+data/
