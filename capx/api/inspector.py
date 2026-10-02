@@ -10,6 +10,7 @@ from capx.core.analysis.startup_analyzer import StartupAnalyzer
 
 from capx.core.detection.anomaly_engine import AnomalyEngine
 from capx.core.risk.scorer import RiskScorer
+from capx.core.recommendations.engine import RecommendationEngine
 
 class InspectEngine:
     """Internal API orchestrator for the Inspect workflow."""
@@ -26,6 +27,7 @@ class InspectEngine:
         
         self.anomaly_engine = AnomalyEngine()
         self.risk_scorer = RiskScorer()
+        self.rec_engine = RecommendationEngine()
         
     def run_full_inspection(self) -> Dict[str, Any]:
         """Executes the analysis pipeline and aggregates results."""
@@ -48,11 +50,20 @@ class InspectEngine:
             detection_alerts=detection_alerts.get("alerts", [])
         )
         
+        # Phase 7: Generate Recommendations
+        recommendations = self.rec_engine.generate_recommendations(
+            process_findings=proc_analysis.get("findings", []),
+            network_findings=net_analysis.get("findings", []),
+            startup_findings=startup_analysis.get("findings", []),
+            detection_alerts=detection_alerts.get("alerts", [])
+        )
+        
         return {
             "system_facts": sys_data,
             "process_findings": proc_analysis,
             "network_findings": net_analysis,
             "startup_findings": startup_analysis,
             "detection_alerts": detection_alerts,
-            "risk_assessment": risk_assessment
+            "risk_assessment": risk_assessment,
+            "recommendations": recommendations
         }

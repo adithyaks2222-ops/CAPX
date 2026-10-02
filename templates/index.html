@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CAPX - Cyber Analysis & Protection eXplorer</title>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        .header { border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: #58a6ff; margin: 0; }
+        button { background-color: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #2ea043; }
+        .card { background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+        .risk-score { font-size: 2em; font-weight: bold; }
+        .SAFE { color: #3fb950; }
+        .MONITOR { color: #d29922; }
+        .WARNING { color: #f85149; }
+        .CRITICAL { color: #ff0000; text-decoration: underline; }
+        pre { background: #010409; padding: 15px; border-radius: 6px; overflow-x: auto; color: #8b949e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CAPX Endpoint Defense</h1>
+            <button onclick="runScan()" id="scanBtn">Run System Scan</button>
+        </div>
+        
+        <div id="status" class="card" style="display: none;"></div>
+        
+        <div id="results" style="display: none;">
+            <div class="card">
+                <h2>System Risk Assessment</h2>
+                <p>Score: <span id="riskScore" class="risk-score"></span>/100</p>
+                <p>Status: <span id="riskBand" style="font-weight: bold;"></span></p>
+            </div>
+            
+            <div class="card">
+                <h2>Raw API Telemetry</h2>
+                <pre id="jsonOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function runScan() {
+            const btn = document.getElementById('scanBtn');
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            
+            btn.disabled = true;
+            btn.innerText = "Scanning...";
+            status.style.display = "block";
+            status.innerText = "Querying Windows OS via CAPX API. Please wait...";
+            results.style.display = "none";
+
+            try {
+                const response = await fetch('/api/scan');
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    const risk = data.data.risk_assessment;
+                    
+                    document.getElementById('riskScore').innerText = risk.score;
+                    
+                    const bandSpan = document.getElementById('riskBand');
+                    bandSpan.innerText = risk.band;
+                    bandSpan.className = risk.band; // Applies color class
+                    
+                    document.getElementById('jsonOutput').innerText = JSON.stringify(data.data, null, 2);
+                    
+                    status.style.display = "none";
+                    results.style.display = "block";
+                } else {
+                    status.innerText = "Error: " + data.message;
+                }
+            } catch (err) {
+                status.innerText = "Failed to connect to CAPX API.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Run System Scan";
+            }
+        }
+    </script>
+</body>
+</html>
