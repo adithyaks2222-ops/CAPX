@@ -71,7 +71,14 @@ def handle_inspect(args: argparse.Namespace) -> None:
         else:
             for a in alerts:
                 print(f"[{a['severity']}] {a['type']} | {a['source']} -> {a['details']}")
-
+    # NEW: Risk Assessment
+    risk = results.get("risk_assessment", {})
+    if risk.get("status") == "success":
+        print(f"\n=== OVERALL SYSTEM RISK ===")
+        print(f"Risk Score: {risk['score']}/100")
+        print(f"Risk Band:  [{risk['band']}]")
+        print(f"Total Issues Evaluated: {risk['total_issues_evaluated']}")
+        
     print("\n[*] Inspection Complete.")
 
 def main() -> None:
