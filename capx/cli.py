@@ -80,7 +80,18 @@ def handle_inspect(args: argparse.Namespace) -> None:
             print(f"[{r['priority']}] TARGET: {r['target']}")
             print(f"    -> ACTION: {r['action']}")
 
+    # --- 8. Export Functionality ---
+    if getattr(args, 'export', False):
+        from capx.core.reporting.exporter import ReportExporter
+        exporter = ReportExporter()
+        path = exporter.export_json(results)
+        if path:
+            print(f"\n[+] Full JSON report exported to: {path}")
+        else:
+            print("\n[-] Failed to export report. Check logs.")
+
     print("\n[*] Inspection Complete.")
+
 
 def handle_monitor(args: argparse.Namespace) -> None:
     """Routes the monitor command to the Monitoring Engine."""
@@ -89,6 +100,7 @@ def handle_monitor(args: argparse.Namespace) -> None:
     # We can default to 10 seconds for testing purposes
     monitor = MonitorEngine(interval_seconds=10)
     monitor.start_monitoring()
+
 
 def handle_optimize(args: argparse.Namespace) -> None:
     """Routes the optimize command to guided remediation."""
@@ -118,7 +130,6 @@ def handle_optimize(args: argparse.Namespace) -> None:
     # 2. Safety Validation & User Confirmation Loop
     for r in optimizable:
         target_str = r['target']
-        # Extract PID and Name from our standard format: "PID:1234 (chrome.exe)"
         match = re.search(r"PID:(\d+)\s*\((.*?)\)", target_str)
         
         if match:
@@ -128,11 +139,9 @@ def handle_optimize(args: argparse.Namespace) -> None:
             print(f"\n[TARGET] {name} (PID: {pid})")
             print(f"  -> Reason: Flagged as a {r['priority']} level resource concern.")
             
-            # Show What Will Change & Safety Verification
             if optimizer.is_safe_to_terminate(pid, name):
                 choice = input(f"  -> Terminate this process to free resources? [y/N]: ")
                 if choice.strip().lower() == 'y':
-                    # Execute & Verify
                     res = optimizer.terminate_process(pid, name)
                     if res["status"] == "success":
                         print(f"  [+] {res['message']}")
@@ -154,10 +163,8 @@ def handle_web(args: argparse.Namespace) -> None:
     
     from capx.app import create_app
     app = create_app()
-    # Debug=False is critical for security tools, even local ones
     app.run(host="127.0.0.1", port=5000, debug=False)
 
-    
 
 def main() -> None:
     """Main CLI entry point."""
@@ -173,11 +180,14 @@ def main() -> None:
     
     # Inspect Command
     inspect_parser = subparsers.add_parser("inspect", help="Run full system and security analysis")
-    
+    inspect_parser.add_argument("--export", action="store_true", help="Export findings to a JSON report")
+
     # Monitor Command
     monitor_parser = subparsers.add_parser("monitor", help="Continuously monitor system health and security")
+    
     # Optimize Command
     optimize_parser = subparsers.add_parser("optimize", help="Guided performance optimization and cleanup")
+    
     # Web Command
     web_parser = subparsers.add_parser("web", help="Launch the local Flask web dashboard")
     
@@ -189,12 +199,12 @@ def main() -> None:
         handle_monitor(args)
     elif args.command == "optimize":
         handle_optimize(args)
-        
     elif args.command == "web":
         handle_web(args)
     elif args.command is None:
         parser.print_help()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

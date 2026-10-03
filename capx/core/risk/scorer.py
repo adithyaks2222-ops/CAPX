@@ -21,7 +21,16 @@ class RiskScorer:
         # Aggregate all findings into a single list
         all_issues = process_findings + network_findings + startup_findings + detection_alerts
         
+        # NEW: Filter out known false positives (Tuning)
+        valid_issues = []
         for item in all_issues:
+            source = str(item.get("source", ""))
+            # Whitelist specific normal behaviors to prevent alarm fatigue
+            if "PID:0" in source or "capx.exe" in source or "Port:445" in source:
+                continue
+            valid_issues.append(item)
+        
+        for item in valid_issues:
             severity = item.get("severity", "MONITOR")
             total_score += self.weights.get(severity, 0)
 
@@ -42,5 +51,5 @@ class RiskScorer:
             "status": "success",
             "score": final_score,
             "band": band,
-            "total_issues_evaluated": len(all_issues)
+            "total_issues_evaluated": len(valid_issues) # Only count what we evaluated
         }
